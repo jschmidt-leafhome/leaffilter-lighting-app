@@ -11,8 +11,8 @@ export function renderScenes(container, state, navigate) {
     const html = `
       <div class="screen" id="screen-scenes">
         <div class="screen-header">
-          <h1 class="screen-title">Scenes</h1>
-          <button class="btn-icon" id="add-scene-btn" title="Create custom scene">
+          <h1 class="screen-title">Patterns</h1>
+          <button class="btn-icon" id="add-scene-btn" title="Create custom pattern">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
         </div>
@@ -20,7 +20,7 @@ export function renderScenes(container, state, navigate) {
         <!-- Search -->
         <div class="scene-search">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" placeholder="Search scenes..." id="scene-search-input" />
+          <input type="text" placeholder="Search patterns..." id="scene-search-input" />
         </div>
 
         <!-- Category Tabs -->
@@ -50,7 +50,9 @@ export function renderScenes(container, state, navigate) {
                 </div>
                 <div class="scene-card-actions">
                   <button class="btn btn-primary btn-sm apply-scene-btn" data-id="${scene.id}" style="flex:1;">Apply</button>
-                  <button class="btn btn-secondary btn-sm" style="flex:1;">Edit</button>
+                  <button class="btn btn-secondary btn-sm edit-scene-btn" data-id="${scene.id}" style="flex:1;">
+                    ${scene.category === 'Custom' ? 'Edit' : 'Use as Base'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -60,8 +62,8 @@ export function renderScenes(container, state, navigate) {
         ${filtered.length === 0 ? `
           <div style="text-align:center; padding: 48px 16px; color: var(--text-secondary);">
             <div style="font-size: 40px; margin-bottom: 12px;">🎨</div>
-            <div style="font-weight: var(--fw-semibold); margin-bottom: 4px;">No scenes here yet</div>
-            <div style="font-size: var(--fs-small);">Create your first custom scene</div>
+            <div style="font-weight: var(--fw-semibold); margin-bottom: 4px;">No patterns here yet</div>
+            <div style="font-size: var(--fs-small);">Create your first custom pattern</div>
           </div>
         ` : ''}
 
@@ -78,7 +80,7 @@ export function renderScenes(container, state, navigate) {
       });
     });
 
-    // Apply scene
+    // Apply scene → set active and go to Home
     container.querySelectorAll('.apply-scene-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -87,8 +89,27 @@ export function renderScenes(container, state, navigate) {
           state.activeScene = scene.name;
           state.lightsOn = true;
           showToast(`Applied: ${scene.name}`);
+          setTimeout(() => navigate('home'), 300);
         }
       });
+    });
+
+    // Edit / Use as Base → open Control pre-loaded with this scene's colors
+    container.querySelectorAll('.edit-scene-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const scene = scenes.find(s => s.id === parseInt(btn.dataset.id));
+        if (scene) {
+          state.controlBaseScene = scene;
+          navigate('control');
+        }
+      });
+    });
+
+    // + button → create blank custom pattern
+    container.querySelector('#add-scene-btn')?.addEventListener('click', () => {
+      state.controlBaseScene = null;
+      navigate('control');
     });
 
     // Favorite toggle

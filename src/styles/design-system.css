@@ -8,13 +8,13 @@
   --bg-quaternary: rgba(255, 255, 255, 0.12);
   --bg-elevated:   #121212;
 
-  /* Brand green — more vibrant emerald to pop on black */
-  --accent:             #00E676;
-  --accent-light:       #69F0AE;
-  --accent-dark:        #00C853;
-  --accent-glow:        rgba(0, 230, 118, 0.25);
-  --accent-glow-strong: rgba(0, 230, 118, 0.45);
-  --accent-subtle:      rgba(0, 230, 118, 0.12);
+  /* Brand green — LeafFilter natural green (Stitch primary #4AAC00) */
+  --accent:             #4AAC00;
+  --accent-light:       #7CD62A;
+  --accent-dark:        #388A00;
+  --accent-glow:        rgba(74, 172, 0, 0.25);
+  --accent-glow-strong: rgba(74, 172, 0, 0.45);
+  --accent-subtle:      rgba(74, 172, 0, 0.12);
 
   /* Warm amber — for "live/active" states */
   --warm:       #FF9800;
@@ -23,15 +23,16 @@
 
   /* Text */
   --text-primary:   #FFFFFF;
-  --text-secondary: #8E8E93; /* Apple-style secondary gray */
-  --text-tertiary:  #636366;
+  --text-secondary: #72796B; /* Stitch neutral — warm gray-green */
+  --text-tertiary:  #4D524A;
   --text-inverse:   #000000;
+  --neutral:        #72796B;
 
   /* Status */
-  --status-online:  #00E676;
+  --status-online:  #4AAC00;
   --status-warning: #FF9800;
-  --status-error:   #FF3B30; /* Apple red */
-  --status-info:    #0A84FF; /* Apple blue */
+  --status-error:   #FF3B30;
+  --status-info:    #0A84FF;
 
   /* Borders & surfaces */
   --border:        rgba(255, 255, 255, 0.08);
@@ -39,7 +40,7 @@
   --border-warm:   rgba(255, 152, 0, 0.15);
   --glass:         rgba(20, 20, 20, 0.65);
   --glass-hover:   rgba(40, 40, 40, 0.65);
-  --glass-green:   rgba(0, 230, 118, 0.08);
+  --glass-green:   rgba(74, 172, 0, 0.08);
   --overlay:       rgba(0, 0, 0, 0.75);
 
   /* Radii - squircle-like */

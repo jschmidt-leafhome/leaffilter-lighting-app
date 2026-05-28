@@ -10,22 +10,23 @@ colors:
     tertiary: "rgba(255, 255, 255, 0.08)"
     elevated: "#121212"
   accent:
-    primary: "#00E676"
-    light: "#69F0AE"
-    dark: "#00C853"
-    glow: "rgba(0, 230, 118, 0.25)"
-    glow-strong: "rgba(0, 230, 118, 0.45)"
-    subtle: "rgba(0, 230, 118, 0.12)"
+    primary: "#4AAC00"
+    light: "#7CD62A"
+    dark: "#388A00"
+    glow: "rgba(74, 172, 0, 0.25)"
+    glow-strong: "rgba(74, 172, 0, 0.45)"
+    subtle: "rgba(74, 172, 0, 0.12)"
   warm:
     primary: "#FF9800"
     glow: "rgba(255, 152, 0, 0.25)"
   text:
     primary: "#FFFFFF"
-    secondary: "#8E8E93"
-    tertiary: "#636366"
+    secondary: "#72796B"
+    tertiary: "#4D524A"
     inverse: "#000000"
+  neutral: "#72796B"
   status:
-    online: "#00E676"
+    online: "#4AAC00"
     warning: "#FF9800"
     error: "#FF3B30"
     info: "#0A84FF"
@@ -103,10 +104,13 @@ The palette is built for OLED screens — deep blacks make the accent green pop 
 - **Elevated:** `#121212` — for modal backgrounds and elevated surfaces
 
 ### Accent Green
-- **Primary accent:** `#00E676` — the signature LeafFilter green. Used for CTAs, active states, power indicators, and interactive highlights
-- **Light accent:** `#69F0AE` — for active text on dark backgrounds
-- **Glow:** `rgba(0, 230, 118, 0.25)` — for box-shadow glows and ambient light effects
-- **Subtle:** `rgba(0, 230, 118, 0.12)` — for tinted backgrounds (active chips, selected states)
+- **Primary accent:** `#4AAC00` — the signature LeafFilter natural green (from Stitch brand system). Used for CTAs, active states, power indicators, and interactive highlights
+- **Light accent:** `#7CD62A` — for active text on dark backgrounds
+- **Glow:** `rgba(74, 172, 0, 0.25)` — for box-shadow glows and ambient light effects
+- **Subtle:** `rgba(74, 172, 0, 0.12)` — for tinted backgrounds (active chips, selected states)
+
+### Neutral
+- **Neutral:** `#72796B` — warm gray-green from Stitch. Used for secondary text and supporting UI chrome
 
 ### Text Hierarchy
 - **Primary:** `#FFFFFF` — headlines and key content
@@ -356,6 +360,10 @@ Located in `/public/fonts/`:
 - `founders-grotesk-mono-regular.woff2` (monospace variant)
 
 ### Brand Colors Reference
-- LeafFilter corporate green: `#00E676` (app accent)
+- LeafFilter natural green: `#4AAC00` (app accent — Stitch primary)
 - LeafFilter background: `#000000` (app canvas)
+- Warm neutral: `#72796B` (supporting text, chrome — Stitch neutral)
 - Warm accent: `#FF9800` (schedules, active states)
+
+### Excluded Stitch Colors
+Stitch also generated Secondary `#7182FF` (blue-purple) and Tertiary `#FF5524` (orange-red). Both are excluded — they fight the dark single-accent identity. The app uses one accent (green) only.

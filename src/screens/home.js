@@ -18,6 +18,41 @@ export function renderHome(container, state, navigate) {
         </div>
       </div>
 
+      <!-- Zone Selector (subtle top strip) -->
+      <div class="zone-selector zone-selector--top">
+        <button class="zone-selector-trigger zone-selector-trigger--subtle ${state.zoneDropdownOpen ? 'open' : ''}" id="zone-selector-btn">
+          <div class="zone-selector-left">
+            <span class="zone-selector-label">Zones</span>
+            <span class="zone-selector-text">${(() => {
+              const names = state.allZones.filter(z => z.active).map(z => z.name);
+              if (names.length === 0) return 'No zones active';
+              if (names.length <= 2) return names.join(', ');
+              return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+            })()}</span>
+          </div>
+          <div class="zone-selector-right">
+            <span class="zone-selector-count">${state.allZones.filter(z => z.active).length} / ${state.allZones.length}</span>
+            <svg class="zone-selector-arrow ${state.zoneDropdownOpen ? 'open' : ''}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </button>
+        <div class="zone-selector-panel ${state.zoneDropdownOpen ? 'open' : ''}" id="zone-selector-panel">
+          <div class="zone-selector-rows">
+            ${state.allZones.map(z => `
+              <button class="zone-selector-row ${z.active ? 'active' : ''}" data-zone-id="${z.id}">
+                <div class="zone-selector-dot ${z.active ? 'active' : ''}"></div>
+                <span class="zone-selector-name">${z.name}</span>
+                <span class="zone-selector-leds">${z.leds} LEDs</span>
+                <span class="zone-selector-state">${z.active ? 'On' : 'Off'}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="zone-selector-footer">
+            <button class="btn btn-secondary btn-sm" style="flex:1" id="home-select-all">Select All</button>
+            <button class="btn btn-secondary btn-sm" style="flex:1" id="home-deselect-all">Deselect All</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Hero: Power + Scene -->
       <div class="home-hero">
         <div class="power-btn ${state.lightsOn ? 'active' : ''}" id="power-toggle">
@@ -79,47 +114,6 @@ export function renderHome(container, state, navigate) {
           <div class="quick-action-icon">🎨</div>
           <span>Scenes</span>
         </button>
-      </div>
-
-      <!-- House Zone Map -->
-      <div class="house-map-section">
-        <div class="section-label">Zones</div>
-        <div class="house-map-container">
-          <svg class="house-svg" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- House body -->
-            <rect x="40" y="80" width="240" height="90" rx="4" fill="var(--bg-tertiary)" stroke="var(--border)" stroke-width="1"/>
-            <!-- Roof -->
-            <polygon points="160,15 30,80 290,80" fill="var(--bg-tertiary)" stroke="var(--border)" stroke-width="1"/>
-            <!-- Garage door -->
-            <rect x="200" y="110" width="55" height="55" rx="3" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            <!-- Windows -->
-            <rect x="65" y="100" width="35" height="28" rx="2" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            <rect x="120" y="100" width="35" height="28" rx="2" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            <!-- Door -->
-            <rect x="130" y="130" width="22" height="35" rx="2" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            <!-- Roofline segments (interactive zones) -->
-            <polyline class="zone-segment ${state.activeZones.includes('left') ? 'active' : ''}" data-zone="left" points="30,80 95,47"/>
-            <polyline class="zone-segment ${state.activeZones.includes('peaks') ? 'active' : ''}" data-zone="peaks" points="95,47 160,15 225,47"/>
-            <polyline class="zone-segment ${state.activeZones.includes('right') ? 'active' : ''}" data-zone="right" points="225,47 290,80"/>
-            <polyline class="zone-segment ${state.activeZones.includes('front') ? 'active' : ''}" data-zone="front" points="30,80 290,80" stroke-width="4"/>
-            <polyline class="zone-segment ${state.activeZones.includes('garage') ? 'active' : ''}" data-zone="garage" points="195,80 195,170 260,170 260,80"/>
-            <!-- Zone labels -->
-            <text x="55" y="60" fill="var(--text-tertiary)" font-size="8" font-family="Inter">LEFT</text>
-            <text x="148" y="38" fill="var(--text-tertiary)" font-size="8" font-family="Inter">PEAKS</text>
-            <text x="245" y="60" fill="var(--text-tertiary)" font-size="8" font-family="Inter">RIGHT</text>
-            <text x="145" y="76" fill="var(--text-tertiary)" font-size="8" font-family="Inter">FRONT</text>
-            <text x="210" y="145" fill="var(--text-tertiary)" font-size="8" font-family="Inter">GARAGE</text>
-          </svg>
-        </div>
-        <!-- Zone Quick Buttons -->
-        <div class="zone-quick-grid stagger">
-          ${state.allZones.map(z => `
-            <button class="zone-quick-btn ${z.active ? 'active' : ''}" data-zone-id="${z.id}">
-              <div class="zone-quick-dot"></div>
-              ${z.name.split(' ')[0]}
-            </button>
-          `).join('')}
-        </div>
       </div>
 
       <!-- Now Playing -->
@@ -188,34 +182,40 @@ export function renderHome(container, state, navigate) {
   });
   slider.style.background = `linear-gradient(to right, var(--accent) ${state.brightness}%, var(--bg-quaternary) ${state.brightness}%)`;
 
-  // Zone quick buttons
-  container.querySelectorAll('.zone-quick-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const zid = btn.dataset.zoneId;
+  // Zone dropdown toggle
+  container.querySelector('#zone-selector-btn')?.addEventListener('click', () => {
+    state.zoneDropdownOpen = !state.zoneDropdownOpen;
+    container.querySelector('#zone-selector-btn').classList.toggle('open', state.zoneDropdownOpen);
+    container.querySelector('#zone-selector-panel').classList.toggle('open', state.zoneDropdownOpen);
+    container.querySelector('.zone-selector-arrow').classList.toggle('open', state.zoneDropdownOpen);
+  });
+
+  // Zone rows inside dropdown
+  container.querySelectorAll('.zone-selector-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const zid = row.dataset.zoneId;
       const zone = state.allZones.find(z => z.id === zid);
       if (zone) {
         zone.active = !zone.active;
         if (zone.active) { state.activeZones.push(zid); } else { state.activeZones = state.activeZones.filter(z => z !== zid); }
-        btn.classList.toggle('active', zone.active);
-        const seg = container.querySelector(`.zone-segment[data-zone="${zid}"]`);
-        if (seg) seg.classList.toggle('active', zone.active);
+        renderHome(container, state, navigate);
       }
     });
   });
 
-  // Zone SVG segments
-  container.querySelectorAll('.zone-segment').forEach(seg => {
-    seg.addEventListener('click', () => {
-      const zid = seg.dataset.zone;
-      const zone = state.allZones.find(z => z.id === zid);
-      if (zone) {
-        zone.active = !zone.active;
-        if (zone.active) { state.activeZones.push(zid); } else { state.activeZones = state.activeZones.filter(z => z !== zid); }
-        seg.classList.toggle('active', zone.active);
-        const btn = container.querySelector(`.zone-quick-btn[data-zone-id="${zid}"]`);
-        if (btn) btn.classList.toggle('active', zone.active);
-      }
-    });
+  // Select all / none inside dropdown
+  container.querySelector('#home-select-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.allZones.forEach(z => z.active = true);
+    state.activeZones = state.allZones.map(z => z.id);
+    renderHome(container, state, navigate);
+  });
+  container.querySelector('#home-deselect-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.allZones.forEach(z => z.active = false);
+    state.activeZones = [];
+    renderHome(container, state, navigate);
   });
 
   // Control banner

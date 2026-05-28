@@ -1,4 +1,10 @@
+import { scenes } from '../data/scenes.js';
+
 export function renderControl(container, state, navigate) {
+  // Consume the base scene context once — presets are never modified
+  const baseScene = state.controlBaseScene || null;
+  if (baseScene) state.controlBaseScene = null;
+
   const recentColors = ['#FFA852','#FF1744','#4CAF50','#2196F3','#E91E63','#FF6D00','#AA00FF','#FFD600','#00BFA5','#FFFFFF','#FF6B6B','#4ECDC4'];
   const whiteTemps = [
     { label: 'Candle', temp: 1800, color: '#FF9329' },
@@ -9,10 +15,17 @@ export function renderControl(container, state, navigate) {
     { label: 'Daylight', temp: 6500, color: '#B3D4FF' },
   ];
 
-  let selectedHue = 210;
-  let selectedSat = 80;
+  // Pre-load first color from base scene if present
+  let initialHsl = { h: 210, s: 80 };
+  if (baseScene && baseScene.colors && baseScene.colors.length > 0) {
+    const hsl = hexToHsl(baseScene.colors[0]);
+    initialHsl = { h: hsl.h, s: hsl.s };
+  }
+
+  let selectedHue = initialHsl.h;
+  let selectedSat = initialHsl.s;
   let brightness = state.brightness ?? 75;
-  let speed = 3;
+  let speed = baseScene ? baseScene.speed ?? 0 : 3;
   let drawerTab = 'recent';
   let drawerOpen = false;
   let activeWhiteIdx = 2;
@@ -29,6 +42,7 @@ export function renderControl(container, state, navigate) {
       : `${activeZoneNames.length} Zones`;
 
     const currentColor = getColor();
+    const isEditMode = !!baseScene;
 
     container.innerHTML = `
       <div class="screen control-screen" id="screen-control">
@@ -36,8 +50,11 @@ export function renderControl(container, state, navigate) {
         <!-- Header -->
         <div class="control-header">
           <div class="control-header-left">
-            <div class="control-title">Control Lights</div>
-            <div class="control-zone-label">${zoneLabel} · ${state.allZones.filter(z => z.active).reduce((a,z) => a + z.leds, 0)} LEDs</div>
+            <div class="control-title">${isEditMode ? 'New Pattern' : 'Control Lights'}</div>
+            ${isEditMode
+              ? `<div class="control-base-label">Based on: <span style="color:var(--accent)">${baseScene.name}</span></div>`
+              : `<div class="control-zone-label">${zoneLabel} · ${state.allZones.filter(z => z.active).reduce((a,z) => a + z.leds, 0)} LEDs</div>`
+            }
           </div>
           <button class="control-power-btn ${state.lightsOn ? 'on' : ''}" id="ctrl-power">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64a9 9 0 11-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
@@ -77,7 +94,9 @@ export function renderControl(container, state, navigate) {
         <!-- Action Buttons -->
         <div class="control-actions">
           <button class="btn btn-primary" id="ctrl-apply" style="flex:1;">Set Lights</button>
-          <button class="btn btn-secondary" id="ctrl-save" style="flex:1;">Save Scene</button>
+          <button class="btn btn-secondary" id="ctrl-save" style="flex:1;">
+            ${isEditMode ? 'Save Pattern' : 'Save Scene'}
+          </button>
         </div>
 
         <!-- Bottom Drawer -->
@@ -151,37 +170,6 @@ export function renderControl(container, state, navigate) {
     const cy = canvas.height / 2;
     const radius = cx - 8;
 
-    // Hue ring
-    for (let angle = 0; angle < 360; angle++) {
-      const start = (angle - 1) * Math.PI / 180;
-      const end = (angle + 1) * Math.PI / 180;
-      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-      grad.addColorStop(0, `hsla(${angle}, 0%, 100%, 1)`);
-      grad.addColorStop(0.5, `hsla(${angle}, 100%, 55%, 1)`);
-      grad.addColorStop(1, `hsla(${angle}, 100%, 20%, 1)`);
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, start, end);
-      ctx.fillStyle = grad;
-      ctx.fill();
-    }
-
-    // White center fade
-    const centerGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 0.55);
-    centerGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
-    centerGrad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fillStyle = centerGrad;
-    ctx.fill();
-
-    // Center hole
-    ctx.beginPath();
-    ctx.arc(cx, cy, 36, 0, Math.PI * 2);
-    ctx.fillStyle = 'transparent';
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Redraw properly: hue outer ring, white fade overlay
     for (let angle = 0; angle < 360; angle++) {
       const startA = (angle - 0.9) * Math.PI / 180;
       const endA = (angle + 0.9) * Math.PI / 180;
@@ -192,7 +180,6 @@ export function renderControl(container, state, navigate) {
       ctx.fill();
     }
 
-    // Saturation overlay: white in center
     const satGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
     satGrad.addColorStop(0, 'rgba(255,255,255,1)');
     satGrad.addColorStop(0.4, 'rgba(255,255,255,0.6)');
@@ -202,7 +189,6 @@ export function renderControl(container, state, navigate) {
     ctx.fillStyle = satGrad;
     ctx.fill();
 
-    // Darkness overlay: dark at edges
     const darkGrad = ctx.createRadialGradient(cx, cy, radius * 0.7, cx, cy, radius);
     darkGrad.addColorStop(0, 'rgba(0,0,0,0)');
     darkGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
@@ -211,10 +197,8 @@ export function renderControl(container, state, navigate) {
     ctx.fillStyle = darkGrad;
     ctx.fill();
 
-    // Clear center for the center dot
     ctx.beginPath();
     ctx.arc(cx, cy, 36, 0, Math.PI * 2);
-    ctx.fillStyle = 'transparent';
     ctx.globalCompositeOperation = 'destination-out';
     ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
@@ -258,7 +242,6 @@ export function renderControl(container, state, navigate) {
     selectedHue = ((Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
     selectedSat = Math.min((dist / (radius - 12)) * 100, 100);
     updateSelectorPosition();
-    // Update center dot and glow
     const centerDot = container.querySelector('.color-wheel-center');
     const glow = container.querySelector('.color-wheel-glow');
     const c = getColor();
@@ -266,14 +249,72 @@ export function renderControl(container, state, navigate) {
     if (glow) glow.style.background = `radial-gradient(circle, ${c}44 0%, transparent 70%)`;
   }
 
+  function showSavePatternModal() {
+    const currentColor = getColor();
+    // Build color palette: current color + remaining from base scene (if any)
+    const palette = baseScene
+      ? [currentColor, ...baseScene.colors.slice(1)]
+      : [currentColor];
+
+    const defaultName = baseScene ? `My ${baseScene.name}` : 'New Pattern';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'save-pattern-overlay';
+    overlay.innerHTML = `
+      <div class="save-pattern-sheet">
+        <div class="save-pattern-handle"></div>
+        <div class="save-pattern-title">Save New Pattern</div>
+        ${baseScene ? `<div class="save-pattern-sub">Based on "${baseScene.name}"</div>` : ''}
+        <div class="save-pattern-preview">
+          ${palette.map(c => `<div style="background:${c}"></div>`).join('')}
+        </div>
+        <input type="text" class="save-pattern-input" id="save-pattern-name"
+          placeholder="Pattern name..." value="${defaultName}" />
+        <div class="save-pattern-actions">
+          <button class="btn btn-secondary" id="save-pattern-cancel" style="flex:1;">Cancel</button>
+          <button class="btn btn-primary" id="save-pattern-confirm" style="flex:1;">Save Pattern</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('app-frame').appendChild(overlay);
+
+    // Focus the input and select all
+    const input = overlay.querySelector('#save-pattern-name');
+    setTimeout(() => { input.focus(); input.select(); }, 100);
+
+    overlay.querySelector('#save-pattern-cancel').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    overlay.querySelector('#save-pattern-confirm').addEventListener('click', () => {
+      const name = input.value.trim() || defaultName;
+      const hexColors = baseScene
+        ? [hslToHex(selectedHue, selectedSat, 55), ...baseScene.colors.slice(1)]
+        : [hslToHex(selectedHue, selectedSat, 55)];
+
+      const newScene = {
+        id: Date.now(),
+        name,
+        category: 'Custom',
+        colors: hexColors,
+        speed,
+        animation: speed === 0 ? 'Static' : 'Chase',
+        favorite: false,
+      };
+
+      scenes.push(newScene);
+      overlay.remove();
+      showToast(`Pattern "${name}" saved`);
+      setTimeout(() => navigate('scenes'), 300);
+    });
+  }
+
   function attachEvents() {
-    // Power toggle
     container.querySelector('#ctrl-power')?.addEventListener('click', () => {
       state.lightsOn = !state.lightsOn;
       render();
     });
 
-    // Color wheel interaction
     const canvas = container.querySelector('#ctrl-wheel');
     if (canvas) {
       canvas.addEventListener('mousedown', e => {
@@ -287,7 +328,6 @@ export function renderControl(container, state, navigate) {
       canvas.addEventListener('touchmove', e => { e.preventDefault(); pickColorFromCanvas(e); }, { passive: false });
     }
 
-    // Zone chips
     container.querySelector('[data-zone-action="all"]')?.addEventListener('click', () => {
       const allActive = state.activeZones.length === state.allZones.length;
       state.allZones.forEach(z => z.active = !allActive);
@@ -308,7 +348,6 @@ export function renderControl(container, state, navigate) {
       });
     });
 
-    // Brightness
     container.querySelector('#ctrl-brightness')?.addEventListener('input', e => {
       brightness = parseInt(e.target.value);
       state.brightness = brightness;
@@ -318,7 +357,6 @@ export function renderControl(container, state, navigate) {
     });
     updateRangeTrack(container.querySelector('#ctrl-brightness'), brightness, 100);
 
-    // Speed
     container.querySelector('#ctrl-speed')?.addEventListener('input', e => {
       speed = parseInt(e.target.value);
       const v = container.querySelector('#speed-val');
@@ -327,20 +365,26 @@ export function renderControl(container, state, navigate) {
     });
     updateRangeTrack(container.querySelector('#ctrl-speed'), speed, 10);
 
-    // Apply / Save
+    // Set Lights → apply immediately and navigate home
     container.querySelector('#ctrl-apply')?.addEventListener('click', () => {
       state.lightsOn = true;
+      state.activeScene = 'Custom';
       showToast('Lights updated');
+      setTimeout(() => navigate('home'), 300);
     });
-    container.querySelector('#ctrl-save')?.addEventListener('click', () => showToast('Saved as new scene'));
 
-    // Drawer toggle
+    // Save → always opens the save pattern modal
+    container.querySelector('#ctrl-save')?.addEventListener('click', () => {
+      if (!document.querySelector('.save-pattern-overlay')) {
+        showSavePatternModal();
+      }
+    });
+
     container.querySelector('#ctrl-drawer-handle')?.addEventListener('click', () => {
       drawerOpen = !drawerOpen;
       container.querySelector('#ctrl-drawer')?.classList.toggle('open', drawerOpen);
     });
 
-    // Drawer tabs
     container.querySelectorAll('.ctrl-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         drawerTab = tab.dataset.tab;
@@ -349,7 +393,6 @@ export function renderControl(container, state, navigate) {
       });
     });
 
-    // Recent color swatches
     container.querySelectorAll('.ctrl-color-swatch').forEach(sw => {
       sw.addEventListener('click', () => {
         const hex = sw.dataset.color;
@@ -367,7 +410,6 @@ export function renderControl(container, state, navigate) {
       });
     });
 
-    // White temps
     container.querySelectorAll('.ctrl-white-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         activeWhiteIdx = parseInt(btn.dataset.white);
@@ -381,7 +423,6 @@ export function renderControl(container, state, navigate) {
       });
     });
 
-    // HSL sliders (RGB tab)
     container.querySelector('#rgb-h')?.addEventListener('input', e => {
       selectedHue = parseInt(e.target.value);
       e.target.nextElementSibling.textContent = Math.round(selectedHue);

@@ -9,26 +9,22 @@ export function renderZones(container, state) {
           </button>
         </div>
 
-        <!-- House Map (larger) -->
-        <div class="zones-map">
-          <svg viewBox="0 0 320 200" width="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="40" y="90" width="240" height="100" rx="4" fill="var(--bg-tertiary)" stroke="var(--border)" stroke-width="1"/>
-            <polygon points="160,18 25,90 295,90" fill="var(--bg-tertiary)" stroke="var(--border)" stroke-width="1"/>
-            <rect x="200" y="125" width="55" height="60" rx="3" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            <rect x="65" y="110" width="40" height="32" rx="2" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            <rect x="125" y="110" width="40" height="32" rx="2" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            <rect x="135" y="150" width="24" height="40" rx="2" fill="var(--bg-quaternary)" stroke="var(--border)" stroke-width="1"/>
-            ${state.allZones.filter(z => ['left','peaks','right','front','garage'].includes(z.id)).map(z => {
-              const paths = {
-                left: 'M25,90 L92,54',
-                peaks: 'M92,54 L160,18 L228,54',
-                right: 'M228,54 L295,90',
-                front: 'M25,90 L295,90',
-                garage: 'M195,90 L195,190 L260,190 L260,90'
-              };
-              return `<polyline class="zone-segment ${z.active ? 'active' : ''}" data-zone="${z.id}" points="${paths[z.id]?.split(' ').map(p => p.replace('M','').replace('L','')).join(' ')}" stroke-width="${z.id === 'front' ? 4 : 3}"/>`;
-            }).join('')}
-          </svg>
+        <!-- Zone stats summary -->
+        <div class="zone-stats-bar">
+          <div class="zone-stats-item">
+            <span class="zone-stats-val">${state.allZones.filter(z => z.active).length}</span>
+            <span class="zone-stats-label">Active</span>
+          </div>
+          <div class="zone-stats-divider"></div>
+          <div class="zone-stats-item">
+            <span class="zone-stats-val">${state.allZones.reduce((s, z) => s + (z.active ? z.leds : 0), 0)}</span>
+            <span class="zone-stats-label">LEDs On</span>
+          </div>
+          <div class="zone-stats-divider"></div>
+          <div class="zone-stats-item">
+            <span class="zone-stats-val">${state.allZones.length}</span>
+            <span class="zone-stats-label">Total Zones</span>
+          </div>
         </div>
 
         <!-- All/None toggle -->
