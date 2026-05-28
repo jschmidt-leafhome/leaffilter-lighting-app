@@ -124,8 +124,7 @@ export function renderScenes(container, state, navigate) {
                     </button>
                   </div>
                   <div class="scene-card-meta">
-                    <span>${scene.animation}</span>
-                    ${isAnimated ? `<span class="dir-indicator">${dir === 'reverse' ? '←' : '→'}</span>` : ''}
+                    <span>${scene.animation}${isAnimated ? ` ${dir === 'reverse' ? '←' : '→'}` : ''}</span>
                   </div>
                   <div class="scene-card-actions">
                     <button class="scene-action-btn primary apply-scene-btn" data-id="${scene.id}">Apply</button>

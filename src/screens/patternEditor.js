@@ -115,6 +115,17 @@ export function renderPatternEditor(container, state, navigate) {
               <button class="pe-dir-btn ${editDirection === 'reverse' ? 'active' : ''}" data-dir="reverse">← Reverse</button>
             </div>
           </div>
+
+          <div class="pe-field">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-sm);">
+              <label class="pe-label" style="margin-bottom:0;">Speed</label>
+              <span style="font-size:var(--fs-small); font-weight:var(--fw-semibold); color:var(--text-primary);" id="pe-speed-val">${editSpeed}</span>
+            </div>
+            <input type="range" id="pe-speed" min="1" max="10" step="1" value="${editSpeed}" style="width:100%;" />
+            <div style="display:flex; justify-content:space-between; font-size:var(--fs-caption); color:var(--text-tertiary); margin-top:4px;">
+              <span>Slow</span><span>Fast</span>
+            </div>
+          </div>
         ` : ''}
 
         <!-- Actions -->
@@ -200,6 +211,23 @@ export function renderPatternEditor(container, state, navigate) {
           b.classList.toggle('active', b.dataset.dir === editDirection)
         );
       });
+    });
+
+    // Speed
+    container.querySelector('#pe-speed')?.addEventListener('input', e => {
+      editSpeed = parseInt(e.target.value);
+      const valEl = container.querySelector('#pe-speed-val');
+      if (valEl) valEl.textContent = editSpeed;
+      stopPreview();
+      const canvas = container.querySelector('#pe-canvas');
+      if (canvas) {
+        stopPreview = startRooflinePreview(canvas, {
+          colors: editColors,
+          animation: editAnimation,
+          direction: editDirection,
+          speed: editSpeed,
+        });
+      }
     });
 
     // Save

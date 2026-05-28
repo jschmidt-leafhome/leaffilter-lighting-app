@@ -166,6 +166,19 @@ h1, h2, h3, .screen-title, .onboarding-title, .control-title {
     box-shadow: none;
   }
   #app-frame::after { display: none; }
+
+  /* Real phone has its own status bar — hide the simulated one */
+  #status-bar { display: none; }
+
+  /* Push content down from the notch / dynamic island */
+  #screen-content {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Keep bottom nav above the home indicator */
+  #bottom-nav {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
 }
 
 #app-container {
@@ -270,4 +283,21 @@ h1, h2, h3, .screen-title, .onboarding-title, .control-title {
   text-transform: uppercase;
   letter-spacing: 1.2px;
   margin-bottom: var(--space-sm);
+}
+
+/* ===== MOBILE INPUT FIXES ===== */
+/* Prevent iOS from zooming into focused inputs (requires font-size >= 16px) */
+@media (max-width: 430px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  /* Dark color-scheme so native time/date pickers render in dark mode */
+  input[type="time"],
+  input[type="date"] {
+    color-scheme: dark;
+  }
+  /* Remove tap highlight on interactive elements */
+  button, a, label, input {
+    -webkit-tap-highlight-color: transparent;
+  }
 }

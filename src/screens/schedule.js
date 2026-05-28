@@ -145,7 +145,7 @@ export function renderSchedule(container, state) {
                 ${vacationActive ? `Running: ${vacationScene}` : 'Simulate presence while away'}
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;">
+            <div>
               <label class="toggle" onclick="event.stopPropagation()">
                 <input type="checkbox" id="vacation-toggle" ${vacationActive ? 'checked' : ''} />
                 <div class="toggle-track"></div>

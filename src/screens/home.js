@@ -41,13 +41,44 @@ export function renderHome(container, state, navigate) {
   }
 
   function updateActiveDotColor() {
-    const hex = '#' + hslToHex(selectedHue, selectedSat, 55);
-    patternColors[activeDotIdx] = hex;
-    const dot = container.querySelectorAll('.hm-pattern-dot')[activeDotIdx];
-    if (dot) {
-      dot.style.background = hex;
-      dot.style.boxShadow = `0 0 8px ${hex}88`;
+    // Store the color at full brightness (L=55) as the source of truth
+    const fullHex = '#' + hslToHex(selectedHue, selectedSat, 55);
+    patternColors[activeDotIdx] = fullHex;
+    refreshDotDisplays();
+  }
+
+  // Update ALL pattern dots to reflect current brightness level
+  function refreshDotDisplays() {
+    const displayL = 5 + (brightness / 100) * 50; // 0% → near-black, 100% → L55
+    const dots = container.querySelectorAll('.hm-pattern-dot');
+    dots.forEach((dot, i) => {
+      const { h, s } = hexToHsl(patternColors[i]);
+      const displayHex = '#' + hslToHex(h, s, displayL);
+      dot.style.background = displayHex;
+      dot.style.boxShadow = `0 0 8px ${displayHex}88`;
+    });
+  }
+
+  // Interpolate the white-temperature gradient to get a hex color
+  function whiteTempToColor(pct) {
+    const stops = [
+      [0,   0xFF, 0x93, 0x29],
+      [25,  0xFF, 0xD4, 0xA3],
+      [50,  0xFF, 0xFF, 0xFF],
+      [75,  0xC8, 0xD8, 0xFF],
+      [100, 0x7E, 0xB3, 0xFF],
+    ];
+    let lo = stops[0], hi = stops[stops.length - 1];
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (pct >= stops[i][0] && pct <= stops[i + 1][0]) {
+        lo = stops[i]; hi = stops[i + 1]; break;
+      }
     }
+    const t = (pct - lo[0]) / (hi[0] - lo[0] || 1);
+    const r = Math.round(lo[1] + t * (hi[1] - lo[1]));
+    const g = Math.round(lo[2] + t * (hi[2] - lo[2]));
+    const b = Math.round(lo[3] + t * (hi[3] - lo[3]));
+    return '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
   }
 
   function render() {
@@ -129,26 +160,14 @@ export function renderHome(container, state, navigate) {
 
         <!-- White Temp slider -->
         <div class="hm-white-temp-section">
+          <div class="hm-temp-header">
+            <span class="hm-temp-title">Color Temperature</span>
+            <span class="hm-temp-badge" id="temp-label">${getTempValue(whiteTemp)}</span>
+          </div>
           <div class="hm-temp-row">
-            <!-- Warm end icon -->
-            <div class="hm-temp-cap hm-temp-cap--warm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-                <circle cx="12" cy="12" r="4" fill="currentColor"/>
-              </svg>
-            </div>
-            <!-- Slider + label -->
-            <div class="hm-temp-slider-wrap">
-              <input type="range" id="white-temp-slider" class="hm-white-temp-range" min="0" max="100" value="${whiteTemp}" />
-              <div class="hm-temp-badge" id="temp-label">${getTempValue(whiteTemp)}</div>
-            </div>
-            <!-- Cool end icon -->
-            <div class="hm-temp-cap hm-temp-cap--cool">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>
-                <line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/>
-              </svg>
-            </div>
+            <span class="hm-temp-end-label">Warm</span>
+            <input type="range" id="white-temp-slider" class="hm-white-temp-range" min="0" max="100" value="${whiteTemp}" style="flex:1;" />
+            <span class="hm-temp-end-label">Cool</span>
           </div>
         </div>
 
@@ -222,6 +241,7 @@ export function renderHome(container, state, navigate) {
     requestAnimationFrame(() => {
       updateSelectorPos();
       initBrightSlider();
+      refreshDotDisplays();
     });
   }
 
@@ -325,6 +345,7 @@ export function renderHome(container, state, navigate) {
       brightness = Math.round((1 - pct) * 100);
       state.brightness = brightness;
       placeBrightThumb();
+      refreshDotDisplays();
     }
 
     const onMove = e => setFromY(e.touches ? e.touches[0].clientY : e.clientY);
@@ -361,6 +382,21 @@ export function renderHome(container, state, navigate) {
   // ── Movement bottom sheet ────────────────────────────────────────────────────
 
   function showMovementSheet() {
+    const ICONS = {
+      'Stationary': '■',  'Chase': '⚡',  'Twinkle': '✨',  'Wave': '🌊',
+      'Fade': '🌫️',       'Meteor': '☄️', 'Pulse': '💓',   'Bounce': '↕',
+    };
+    const DESC = {
+      'Stationary': 'All lights stay on',
+      'Chase':      'Lights run in sequence',
+      'Twinkle':    'Random sparkle effect',
+      'Wave':       'Rolling wave motion',
+      'Fade':       'Smooth fade in and out',
+      'Meteor':     'Shooting star effect',
+      'Pulse':      'Rhythmic breathing pulse',
+      'Bounce':     'Back and forth bounce',
+    };
+
     const overlay = document.createElement('div');
     overlay.className = 'save-pattern-overlay';
     overlay.innerHTML = `
@@ -369,7 +405,13 @@ export function renderHome(container, state, navigate) {
         <div class="save-pattern-title">Movement</div>
         <div class="hm-movement-sheet-list">
           ${movements.map(m => `
-            <button class="hm-movement-sheet-opt ${selectedMovement === m ? 'active' : ''}" data-movement="${m}">${m}</button>
+            <button class="hm-movement-sheet-opt ${selectedMovement === m ? 'active' : ''}" data-movement="${m}">
+              <span class="movement-opt-icon">${ICONS[m] ?? '●'}</span>
+              <div class="movement-opt-text">
+                <span class="movement-opt-name">${m}</span>
+                <span class="movement-opt-desc">${DESC[m] ?? ''}</span>
+              </div>
+            </button>
           `).join('')}
         </div>
       </div>
@@ -406,11 +448,20 @@ export function renderHome(container, state, navigate) {
       canvas.addEventListener('touchmove', e => { e.preventDefault(); pickColorFromWheel(e); }, { passive: false });
     }
 
-    // White temp slider
+    // White temp slider — independent from color wheel (Philips Hue approach)
     container.querySelector('#white-temp-slider')?.addEventListener('input', e => {
       whiteTemp = parseInt(e.target.value);
       const label = container.querySelector('#temp-label');
       if (label) label.textContent = getTempValue(whiteTemp);
+
+      // Update LED dot directly with the white temperature color (don't move the wheel)
+      const tempHex = whiteTempToColor(whiteTemp);
+      patternColors[activeDotIdx] = tempHex;
+      refreshDotDisplays();
+
+      // Update brightness track gradient to match the white tone
+      const track = container.querySelector('#bright-track');
+      if (track) track.style.background = `linear-gradient(to top, #000000, ${tempHex})`;
     });
 
     // Color swatches
